@@ -2,14 +2,35 @@ const AWS = require('aws-sdk');
 const cognito = new AWS.CognitoIdentityServiceProvider();
 
 const createUser = async (event) => {
-  const body = JSON.parse(JSON.stringify(event));
-  const { email, name, password } = body;
-  const userPoolId = process.env.USER_POOL_ID;
-
   try {
+    const { email, name, password } = event;
+    const userPoolId = process.env.USER_POOL_ID;
+
+    if (!email || !name || !password) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Campos obrigatórios faltando: email, name, password' })
+      };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Formato de email inválido' })
+      };
+    }
+
+    if (password.length < 6) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'A senha deve ter pelo menos 8 caracteres' })
+      };
+    }
+
     const params = {
       UserPoolId: userPoolId,
-      Username: name,
+      Username: email,
       UserAttributes: [
         {
           Name: 'email',
@@ -23,41 +44,40 @@ const createUser = async (event) => {
           Name: 'email_verified',
           Value: 'true'
         },
-
-      ]
+      ],
+      TemporaryPassword: password,
+      MessageAction: 'SUPPRESS'
     };
 
-    const data = await cognito.adminCreateUser(params)
-      .promise()
-      .then(async (data) => {
-        await cognito.adminSetUserPassword(
-          {
-            UserPoolId: userPoolId,
-            Username: data.username,
-            Password: password,
-            Permanent: true
-          }).promise();
-      });
+    await cognito.adminCreateUser(params).promise();
+
+    await cognito.adminSetUserPassword({
+      UserPoolId: userPoolId,
+      Username: email,
+      Password: password,
+      Permanent: true
+    }).promise();
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: 'User created successfully',
-        user: data,
-        token: data.token
+        message: 'Usuário criado com sucesso'
       })
     };
+
   } catch (error) {
+    console.error('Erro ao criar usuário:', error);
+
     if (error.code === 'UsernameExistsException') {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: 'User already exists' })
+        body: JSON.stringify({ message: 'Usuário já existe' })
       };
     }
 
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Error creating user', error: error.message })
+      body: JSON.stringify({ message: 'Erro ao criar usuário', error: error.message })
     };
   }
 };

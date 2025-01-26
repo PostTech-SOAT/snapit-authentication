@@ -38,8 +38,8 @@ lambda_config = [
     function_name  = "CriarUsuarioCognito"
     directory_name = "post_function"
     zip_file_name  = "create_user.zip"
-    handler        = "index.handler"
-    runtime        = "nodejs20.x"
+    handler        = "create_user.handler"
+    runtime        = "nodejs16.x"
     timeout        = 30
     is_authorizer  = false
   },
@@ -48,7 +48,7 @@ lambda_config = [
     directory_name = "post_function"
     zip_file_name  = "login.zip"
     handler        = "login.handler"
-    runtime        = "nodejs20.x"
+    runtime        = "nodejs16.x"
     timeout        = 30
     is_authorizer  = false
   }

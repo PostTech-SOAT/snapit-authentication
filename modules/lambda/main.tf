@@ -9,7 +9,10 @@ resource "aws_lambda_function" "this" {
   timeout          = each.value.timeout
   environment {
     variables = {
-      USER_POOL_ID = "${var.cognito_user_pool_id}"
+      USER_POOL_ID  = "${var.cognito_user_pool_id}"
+      CLIENT_ID     = "${var.cognito_user_pool_client_id}"
+      CLIENT_SECRET = "${var.cognito_user_pool_client_secret}"
+
     }
   }
 }
